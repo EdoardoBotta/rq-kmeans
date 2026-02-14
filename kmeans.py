@@ -6,13 +6,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
-"""
-Key abstractions for recsys tokenziers library:
-* Trainable tokenizer
-* Tokenizer trainer
-* Trained tokenizer
-"""
-
 
 class Kmeans(nn.Module):
     def __init__(self, k, dim):
