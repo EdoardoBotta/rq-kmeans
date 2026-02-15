@@ -7,7 +7,7 @@ from torch.library import wrap_triton
 IS_PTX_RNA_TF32_SUPPORTED = torch.cuda.is_available() and torch.cuda.get_device_capability()[0] == 8
 
 def kmeans_quantize(x: torch.Tensor, codebook: torch.Tensor):
-    if x.shape[-1] <= 32 and codebook.shape[0] <= 1024:
+    if x.shape[-1] <= 128 and codebook.shape[0]*x.shape[0] >= 16_000_000:
         return quantize_fwd(x, codebook)
     return quantize_fwd_mm(x, codebook)[0]
 
@@ -41,7 +41,12 @@ def quantize_fwd(
     return quantized
 
 @triton.autotune(configs=[
-    triton.Config(kwargs={'BLOCK_B': 16, "BLOCK_N": 16}, num_stages=2, num_warps=4),
+    triton.Config({'BLOCK_B': 32,  'BLOCK_N': 32},  num_warps=4,  num_stages=2),
+    triton.Config({'BLOCK_B': 64,  'BLOCK_N': 32},  num_warps=4,  num_stages=2),
+    triton.Config({'BLOCK_B': 128, 'BLOCK_N': 32},  num_warps=8,  num_stages=2),
+    triton.Config({'BLOCK_B': 64,  'BLOCK_N': 64},  num_warps=4,  num_stages=3),
+    triton.Config({'BLOCK_B': 128, 'BLOCK_N': 64},  num_warps=8,  num_stages=3),
+    triton.Config({'BLOCK_B': 256, 'BLOCK_N': 32},  num_warps=8,  num_stages=2),
   ],
   key=["B", "N", 'D'],
   restore_value=["out_ptr"]
@@ -142,7 +147,30 @@ def quantize_fwd_mm(
     return quantized, dist
 
 @triton.autotune(configs=[
-    triton.Config(kwargs={'BLOCK_B': 16, "BLOCK_N": 16, "BLOCK_D": 16, "GROUP_SIZE_M": 16}, num_stages=2, num_warps=4),
+    triton.Config(
+        {'BLOCK_B': 32, 'BLOCK_N': 32, 'BLOCK_D': 32, 'GROUP_SIZE_M': 8},
+        num_warps=4, num_stages=3
+    ),
+    triton.Config(
+        {'BLOCK_B': 64, 'BLOCK_N': 32, 'BLOCK_D': 32, 'GROUP_SIZE_M': 8},
+        num_warps=8, num_stages=3
+    ),
+    triton.Config(
+        {'BLOCK_B': 64, 'BLOCK_N': 64, 'BLOCK_D': 32, 'GROUP_SIZE_M': 8},
+        num_warps=8, num_stages=3
+    ),
+    triton.Config(
+        {'BLOCK_B': 64, 'BLOCK_N': 64, 'BLOCK_D': 64, 'GROUP_SIZE_M': 8},
+        num_warps=8, num_stages=4
+    ),
+    triton.Config(
+        {'BLOCK_B': 128, 'BLOCK_N': 64, 'BLOCK_D': 32, 'GROUP_SIZE_M': 4},
+        num_warps=8, num_stages=3
+    ),
+    triton.Config(
+        {'BLOCK_B': 128, 'BLOCK_N': 128, 'BLOCK_D': 32, 'GROUP_SIZE_M': 4},
+        num_warps=8, num_stages=3
+    ),
   ],
   key=["B", "N", 'D'],
   restore_value=["out_ptr", "dist_ptr", "locks_ptr"]
@@ -230,14 +258,6 @@ quantize_fwd_mm.register_kernel("cpu")
 def quantize_cpu_fwd_mm(x: torch.Tensor, codebook: torch.Tensor):
     dist, quantized = torch.cdist(x, codebook).min(-1)
     return quantized, dist
-
-if __name__ == "__main__":
-    x = torch.randn((48, 256), dtype=torch.float32, device=torch.device("cuda"))
-    codebook = torch.randn((48, 256), dtype=torch.float32, device=torch.device("cuda"))
-    quantized = quantize_fwd(x, codebook)
-    quantized_mm, dist_mm = quantize_fwd_mm(x, codebook)
-    true = torch.cdist(x, codebook).min(-1)
-    import pdb; pdb.set_trace()
     
 
     

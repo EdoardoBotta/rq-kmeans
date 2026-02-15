@@ -1,7 +1,6 @@
 import torch
 from tqdm import tqdm
-from rqvae import quantize_fwd
-from rqvae import quantize_fwd_mm
+from kernels.quantize import kmeans_quantize
 from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -51,7 +50,7 @@ class Kmeans(nn.Module):
     
     @torch.no_grad
     def forward(self, x, acc=False):
-        indices = quantize_fwd(x, self.centroids)
+        indices = kmeans_quantize(x, self.centroids)
 
         if acc:
             self.acc_cluster_emb.scatter_add_(0, indices.unsqueeze(1).expand(indices.shape[0], self.dim), x)
@@ -125,7 +124,6 @@ def train():
     dataloader = DataLoader(dataset, batch_size=batch_size)
     centroids = kmeans.fit(dataloader, max_iters=max_iters, tol=tol)
         
-
 
 if __name__ == "__main__":
     train()
