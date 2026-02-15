@@ -11,7 +11,7 @@ clustering and vector-quantization experiments. The code is organized for clarit
 - **Benchmarking:** `benchmark.py` provides a lightweight harness to measure performance and quality.
 
 ## Requirements
-- Python 3.8+
+- Tested on Python 3.12
 - See `requirements.txt` for pinned dependencies used by this project.
 
 Setup using a virtual environment and `requirements.txt`:
