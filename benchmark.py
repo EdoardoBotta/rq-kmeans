@@ -71,7 +71,7 @@ def plot_heatmap(df, value_col, title, filename):
 
 if __name__ == "__main__":
 
-    N = 4096
+    N = 512
 
     B_vals = [1024, 4096, 8192, 16384, 32768]
     D_vals = [16, 32, 64, 128, 256]
