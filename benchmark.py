@@ -77,18 +77,18 @@ if __name__ == "__main__":
     D_vals = [16, 32, 64, 128, 256]
 
     df = benchmark_grid(N=N, B_vals=B_vals, D_vals=D_vals)
-    df.to_csv("speedup_grid_compiled.csv", index=False)
+    df.to_csv("out/speedup_grid_compiled.csv", index=False)
 
     plot_heatmap(
         df,
         value_col="small_speedup",
         title=f"quantize_fwd Speedup vs torch.compile(cdist) (N={N})",
-        filename="heatmap_small_speedup.jpg",
+        filename="out/heatmap_small_speedup.jpg",
     )
 
     plot_heatmap(
         df,
         value_col="mm_speedup",
         title=f"quantize_fwd_mm Speedup vs torch.compile(cdist) (N={N})",
-        filename="heatmap_mm_speedup.jpg",
+        filename="out/heatmap_mm_speedup.jpg",
     )
