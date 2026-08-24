@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/1157709805.svg)](https://doi.org/10.5281/zenodo.22076185)
+
 # rq-kmeans
 
 A compact implementation of K-Means clustering and residual quantization (RQ/KMeans-like) utilities.
